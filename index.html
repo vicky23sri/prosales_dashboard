@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #003366;
+            --accent-color: #00a8e8;
+            --text-color: #333333;
+            --background-color: #f0f8ff;
+            --hover-color: rgba(0, 0, 0, 0.1);
+            --active-color: #004080; /* Darker shade for active state */
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+        }
+
+        @media (max-width: 1023px) {
+            .sidebar-open {
+                transform: translateX(0);
+            }
+
+            .sidebar-closed {
+                transform: translateX(-100%);
+            }
+        }
+
+        .sidebar {
+            /* background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%); */
+            color: var(--background-color);
+        }
+
+        .sidebar-header {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+        }
+
+        /* .sidebar-header img {
+            border: 2px solid var(--accent-color);
+        } */
+
+        .sidebar-content {
+            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+			color:black;
+            /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
+        }
+
+        .sidebar-content:hover {
+            background-color: var(--hover-color);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+			color:black;
+        }
+
+        .sidebar-content.active {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 0.5em 1em;
+            border-radius: 0.25em;
+            white-space: nowrap;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800 bg-gray-100" x-data="dashboard">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar shadow-lg fixed lg:relative z-20 h-full w-64 sidebar-transition lg:w-72"
+            :class="{ 'sidebar-open': sidebarOpen, 'sidebar-closed': !sidebarOpen }">
+            <nav class="h-full flex flex-col">
+                <div class="p-6 flex flex-col items-center sidebar-header border-b border-gray-200">
+					<img src="./images/logo copy.png" alt="Logo" class="w-48 h-26">
+					<button @click="toggleSidebar()"
+						class="lg:hidden absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200 transition-colors duration-200 z-10">
+						<i class="fas fa-times text-white"></i>
+					</button>
+				</div>
+                <ul class="flex-1 py-6 space-y-4 overflow-y-auto bg-[white]">
+                    <div class="flex flex-col space-y-2">
+						<button @click="changeContent('dashboard')"
+							class="sidebar-content flex items-center p-4 transition-all duration-200 rounded-xl"
+							:class="{ 'active': currentContent === 'dashboard' }">
+							<i class="fas fa-fw fa-tachometer-alt mr-3 text-lg"></i>
+							<span class="text-sm">Dashboard</span>
+						</button>
+					</div>
+					
+                    <div class="flex flex-col space-y-2">
+                        <button @click="changeContent('projects')"
+                            class="sidebar-content flex items-center p-3 rounded-xl transition-all duration-200"
+                            :class="{ 'active': currentContent === 'projects' }">
+                            <i class="fa-solid fa-list-check mr-3 text-lg"></i>
+                            <span class="text-sm">Projects</span>
+                        </button>
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <button @click="changeContent('vendor')"
+                            class="sidebar-content flex items-center p-3 rounded-xl transition-all duration-200"
+                            :class="{ 'active': currentContent === 'vendor' }">
+                            <i class="fa-solid fa-network-wired mr-3 text-lg"></i>
+                            <span class="text-sm">Vendor</span>
+                        </button>
+                    </div>
+                </ul>
+                <div class="border-t border-gray-200 bg-[--primary-color] p-4 flex items-center">
+                    <img src="https://img.freepik.com/free-photo/young-beautiful-woman-pink-warm-sweater-natural-look-smiling-portrait-isolated-long-hair_285396-896.jpg?size=626&ext=jpg&uid=R75331262&ga=GA1.1.1292211247.1718182866&semt=sph"
+                        alt="Avatar" class="w-12 h-12 rounded-full object-cover shadow-lg">
+                    <div class="ml-3">
+                        <p class="font-medium text-sm">John Doe</p>
+                        <p class="text-xs text-white">john@example.com</p>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-gradient-to-r from-[#f0f8ff] to-[#e6f3ff] shadow-md p-2 flex justify-between items-center border-b-4 border-[#0056b3]">
+                <div class="flex items-center space-x-6">
+                    <button @click="toggleSidebar()" class="p-2 rounded-full bg-white bg-opacity-50 hover:bg-opacity-70 transition-all duration-300 lg:hidden">
+                        <i class="fas" :class="sidebarOpen ? 'fa-times' : 'fa-bars'" class="text-[#003366]"></i>
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-[#003366] tracking-wide">
+                        Welcome, <span class="bg-clip-text text-transparent bg-[#00a8e8]">Admin</span>
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="relative group">
+                        <button class="p-3 rounded-full bg-white bg-opacity-50 hover:bg-opacity-70 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#0056b3]">
+                            <i class="fas fa-bell text-xl text-[#003366]"></i>
+                            <span class="absolute -top-1 -right-1 bg-[#00a8e8] text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">3</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-semibold text-[#003366]">John Doe</p>
+                            <p class="text-xs text-[#0056b3]">Administrator</p>
+                        </div>
+                        <div class="relative group">
+                            <img src="https://img.freepik.com/free-photo/young-beautiful-woman-pink-warm-sweater-natural-look-smiling-portrait-isolated-long-hair_285396-896.jpg?size=626&ext=jpg&uid=R75331262&ga=GA1.1.1292211247.1718182866&semt=sph"
+                                alt="Avatar" class="w-12 h-12 rounded-full object-cover shadow-md border-3 border-[#0056b3] group-hover:border-[#00a8e8] transition-colors duration-300">
+                            <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full shadow-sm"></span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6" id="content">
+                <!-- Content goes here -->
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

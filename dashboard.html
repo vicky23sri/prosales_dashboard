@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+
+<body class=" p-6">
+    <div class="flex flex-col md:flex-row justify-between items-start mb-6 space-y-4 md:space-y-0">
+        <h1 class="text-3xl font-bold">Dashboard</h1>
+    </div>
+
+    <div x-data="dashboardStats()" class="bg-gray-100">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8 mb-8">
+            <!-- Total Projects Card -->
+            <div class="bg-blue-500 rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-white">Total Projects</h3>
+                        <div class="bg-opacity-30 rounded-full p-3">
+                            <i class="fas fa-project-diagram text-3xl text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <!-- Left side -->
+                        <p class="text-5xl font-bold text-white mb-4" x-text="totalProjects"></p>
+                    
+                        <!-- Right side -->
+                        <div class="flex items-center text-blue-100">
+                            <i class="fas fa-arrow-up mr-2" x-show="projectGrowth > 0"></i>
+                            <i class="fas fa-arrow-down mr-2" x-show="projectGrowth < 0"></i>
+                            <span x-text="`${projectGrowth}% from last month`"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-1">
+                            <span>Progress</span>
+                            <span x-text="`${projectProgress}%`"></span>
+                        </div>
+                        <div class="h-2 bg-blue-200 rounded-full">
+                            <div class="h-full bg-white rounded-full" :style="`width: ${projectProgress}%`"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Active Tasks Card -->
+            <div class="bg-blue-500 rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-white">Active Tasks</h3>
+                        <div class="bg-opacity-30 rounded-full p-3">
+                            <i class="fas fa-tasks text-3xl text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-5xl font-bold text-white mb-4" x-text="activeTasks"></p>
+                    
+                        <div class="flex items-center text-purple-100">
+                            <span x-text="`${dueTasks} tasks due soon`"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-purple-100 mb-1">
+                            <span>Progress</span>
+                            <span x-text="`${taskProgress}%`"></span>
+                        </div>
+                        <div class="h-2 bg-purple-200 rounded-full">
+                            <div class="h-full bg-white rounded-full" :style="`width: ${taskProgress}%`"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Pending Tasks Card -->
+            <div class="bg-blue-500 rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-white">Pending Tasks</h3>
+                        <div class=" bg-opacity-30 rounded-full p-3">
+                            <i class="fas fa-clock text-3xl text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-5xl font-bold text-white mb-4" x-text="pendingTasks"></p>
+                    
+                        <div class="flex items-center text-yellow-100">
+                            <i class="fas fa-arrow-up mr-2" x-show="taskChange > 0"></i>
+                            <i class="fas fa-arrow-down mr-2" x-show="taskChange < 0"></i>
+                            <span x-text="`${Math.abs(taskChange)}% from last week`"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-yellow-100 mb-1">
+                            <span>Task Status</span>
+                        </div>
+                        <div class="flex h-2 mb-2 overflow-hidden bg-yellow-200 rounded-full">
+                            <div class="bg-red-400" :style="`width: ${overdueTasks}%`"></div>
+                            <div class="bg-yellow-400" :style="`width: ${onTimeTasks}%`"></div>
+                            <div class="bg-green-400" :style="`width: ${aheadTasks}%`"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-yellow-100">
+                            <span>Overdue</span>
+                            <span>On Time</span>
+                            <span>Ahead</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Team Members Card -->
+            <div class="bg-blue-500 rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-white">Team Members</h3>
+                        <div class=" bg-opacity-30 rounded-full p-3">
+                            <i class="fas fa-users text-3xl text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-5xl font-bold text-white mb-4" x-text="teamMembers"></p>
+                    
+                        <div class="flex items-center text-green-100">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            <span x-text="`${newMembers} new this month`"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-yellow-100 mb-1">
+                            <span>Team Performers</span>
+                        </div>
+                        <div class="flex h-2 overflow-hidden bg-green-200 rounded-full">
+                            <div class="bg-red-400" :style="`width: ${developers}%`"></div>
+                            <div class="bg-green-400" :style="`width: ${designers}%`"></div>
+                            <div class="bg-yellow-400" :style="`width: ${managers}%`"></div>
+                        </div>
+                        <div class="flex justify-between text-xs mt-2 text-green-100">
+                            <span>Developers</span>
+                            <span>Designers</span>
+                            <span>Managers</span>
+                        </div>
+                    </div>
+                    
+                   
+                    <!-- <div class="mt-4">
+                        
+                        <div class="flex h-2 overflow-hidden bg-green-200 rounded-full">
+                            <div class="bg-blue-400" :style="`width: ${developers}%`"></div>
+                            <div class="bg-pink-400" :style="`width: ${designers}%`"></div>
+                            <div class="bg-yellow-400" :style="`width: ${managers}%`"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-green-100">
+                            <span>Developers</span>
+                            <span>Designers</span>
+                            <span>Managers</span>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10" x-data="chartData()" x-init="init">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Company Expenses and Income</h2>
+            <canvas id="waveChart"></canvas>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div style="height: 400px;">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Branch Growth Distribution</h2>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

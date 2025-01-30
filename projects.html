@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Project Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #003366;
+            --accent-color: #00a8e8;
+            --text-color: #333333;
+            --background-color: #f0f8ff;
+            --hover-color: rgba(0, 0, 0, 0.1);
+            --active-color: #004080;
+        }
+    
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+    
+        .bg-white {
+            background-color: #ffffff;
+        }
+    
+        .text-white {
+            color: #ffffff;
+        }
+    
+        .bg-blue-500 {
+            background-color: var(--primary-color);
+        }
+    
+        .hover\:bg-blue-600:hover {
+            background-color: var(--secondary-color);
+        }
+    
+        .text-gray-800 {
+            color: var(--text-color);
+        }
+    
+        .bg-gray-100 {
+            background-color: var(--background-color);
+        }
+    
+        .text-gray-700, .text-gray-600 {
+            color: var(--text-color);
+        }
+    
+        .bg-blue-50 {
+            background-color: rgba(0, 86, 179, 0.1);
+        }
+    
+        .text-blue-700, .text-blue-600 {
+            color: var(--primary-color);
+        }
+    
+        .bg-green-50 {
+            background-color: rgba(0, 168, 232, 0.1);
+        }
+    
+        .text-green-700, .text-green-600 {
+            color: var(--accent-color);
+        }
+    
+        .border-gray-200 {
+            border-color: var(--hover-color);
+        }
+    
+        .text-gray-200 {
+            color: var(--hover-color);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto" x-data="projectData()">
+        <h1 class="text-3xl md:text-4xl font-bold mb-6 text-gray-800">Project Dashboard</h1>
+        
+        <div x-show="selectedProject === null" class="bg-white rounded-lg shadow-lg overflow-x-auto">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white">New Projects</h2>
+                <div class="flex items-center">
+                    <!-- <span class="bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-semibold mr-4">
+                        Tasks: <span x-text="tasks.length"></span>
+                    </span> -->
+                    <button @click="addNewProject()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-xl text-sm">
+                        + Add New Project
+                    </button>
+                </div>
+            </div>
+            <div>
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-blue-600 to-blue-400 text-white">
+                        <tr>
+                            <th class="py-3 px-4 border border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Project</th>
+                            <th class="py-3 px-4 border border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Timeline</th>
+                            <th class="py-3 px-4 border border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                            <th class="py-3 px-4 border border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Team Lead</th>
+                            <th class="py-3 px-4 border border-gray-200 text-center text-xs font-semibold uppercase tracking-wider">Tasks</th>
+                            <th class="py-3 px-4 border border-gray-200 text-center text-xs font-semibold uppercase tracking-wider">Location</th>
+                            <th class="py-3 px-4 border border-gray-200 text-center text-xs font-semibold uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <template x-for="(project, index) in projects" :key="index">
+                            <tr :class="{'hover:bg-gray-50 transition duration-150 ease-in-out': !project.editing, 'bg-blue-50': project.editing}">
+                                <td class="py-4 px-4 w-56 border border-gray-200">
+                                    <div class="flex flex-col md:flex-row items-center space-x-4">
+                                        <div class="flex-shrink-0 relative">
+                                            <img :src="project.image" :alt="project.name" class="w-10 h-10 rounded-full object-cover shadow-sm">
+                                            <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full" :class="{
+                                                'bg-green-400': project.status === 'Active',
+                                                'bg-yellow-400': project.status === 'On Hold',
+                                                'bg-red-400': project.status === 'Delayed',
+                                                'bg-gray-400': project.status === 'Completed'
+                                            }"></div>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <input x-show="project.editing" type="text" x-model="project.name" class="w-full px-2 py-1 text-sm border rounded">
+                                            <p x-show="!project.editing" class="text-sm font-medium text-gray-900 truncate" x-text="project.name"></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 w-32 border border-gray-200">
+                                    <div x-show="!project.editing" class="text-xs bg-blue-100 rounded-lg p-2 inline-block truncate">
+                                        <span x-text="formatDateRange(project.startDate, project.endDate)" class="font-semibold text-blue-700"></span>
+                                    </div>
+                                    <div x-show="project.editing" class="flex space-x-2">
+                                        <input type="date" x-model="project.startDate" class="w-1/2 px-2 py-1 text-xs border rounded">
+                                        <input type="date" x-model="project.endDate" class="w-1/2 px-2 py-1 text-xs border rounded">
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 w-40 border border-gray-200">
+                                    <div x-show="!project.editing" class="flex flex-col md:flex-row md:items-start items-center">
+                                        <div class="relative w-10 h-10 flex-shrink-0">
+                                            <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 60 60">
+                                                <circle class="text-gray-200" stroke-width="5" stroke="currentColor" fill="transparent" r="25" cx="30" cy="30"/>
+                                                <circle :class="getStatusColor(project.status)" stroke-width="5" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset(project.progress)" stroke="currentColor" fill="transparent" r="25" cx="30" cy="30"/>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-xs font-bold" x-text="`${project.progress}%`"></span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4 flex flex-col justify-center mt-2">
+                                            <span class="text-sm font-semibold" x-text="project.status"></span>
+                                        </div>
+                                    </div>
+                                    <div x-show="project.editing" class="flex flex-col space-y-2">
+                                        <select x-model="project.status" class="w-full px-2 py-1 text-sm border rounded">
+                                            <option>Active</option>
+                                            <option>On Hold</option>
+                                            <option>Delayed</option>
+                                            <option>Completed</option>
+                                        </select>
+                                        <input type="number" x-model="project.progress" min="0" max="100" class="w-full px-2 py-1 text-sm border rounded" placeholder="Progress %">
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 w-32 border border-gray-200">
+                                    <div x-show="!project.editing" class="flex items-center">
+                                        <img :src="project.teamLeadImage" :alt="project.teamLead" class="w-8 h-8 rounded-full mr-2 object-cover border-2 border-gray-200">
+                                        <span x-text="project.teamLead" class="text-xs text-gray-800 truncate"></span>
+                                    </div>
+                                    <input x-show="project.editing" type="text" x-model="project.teamLead" class="w-full px-2 py-1 text-sm border rounded">
+                                </td>
+                                <td class="py-4 px-4 w-24 text-center border border-gray-200">
+                                    <span x-show="!project.editing" class="inline-flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-800 text-sm font-medium rounded-full" x-text="project.taskCount"></span>
+                                    <input x-show="project.editing" type="number" x-model="project.taskCount" min="0" class="w-full px-2 py-1 text-sm border rounded text-center">
+                                </td>
+                                <td class="py-4 px-4 w-24 text-center border border-gray-200">
+                                    <span x-show="!project.editing" class="inline-flex items-center justify-center" x-text="project.location"></span>
+                                    <input x-show="project.editing" type="text" x-model="project.location" class="w-full px-2 py-1 text-sm border rounded text-center">
+                                </td>
+                                <td class="py-4 px-4 w-32 text-center border border-gray-200">
+                                    <div x-show="!project.editing" class="flex justify-center space-x-2">
+                                        <button @click="editProject(index)" 
+                                                class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs hover:bg-yellow-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">
+                                            Edit
+                                        </button>
+                                        <button @click="confirmDeleteProject(index)" 
+                                                class="bg-red-500 text-white px-2 py-1 rounded-full text-xs hover:bg-red-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                                            Delete
+                                        </button>
+                                        <button @click="toggleDetails(index)" 
+                                            class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs hover:bg-blue-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                                            View
+                                        </button>
+                                    </div>
+                                    <div x-show="project.editing" class="flex justify-center space-x-2">
+                                        <button @click="saveProject(index)" 
+                                                class="bg-green-500 text-white px-2 py-1 rounded-full text-xs hover:bg-green-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                                            Save
+                                        </button>
+                                        <button @click="cancelEdit(index)" 
+                                                class="bg-gray-500 text-white px-2 py-1 rounded-full text-xs hover:bg-gray-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50">
+                                            Cancel
+                                        </button>
+                                        <button @click="toggleDetails(index)" 
+                                            class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs hover:bg-blue-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                                            View
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Delete Confirmation Modal -->
+        <div x-show="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+            <div class="bg-white p-5 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">Confirm Deletion</h3>
+                <p>Are you sure you want to delete this project?</p>
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button @click="deleteProject()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Delete</button>
+                    <button @click="showDeleteModal = false" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div x-data="projectDetails()" x-show="selectedProject !== null" style="font-family: 'Arial', sans-serif; max-width: full; margin: 30px auto;">
+            <div style="border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <div class="project-container rounded-lg overflow-hidden border ">
+                    <div style="background-color: #0056b3; color: white; padding: 2rem; border-radius: 10px 10px 0 0; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
+                        <h1 x-text="selectedProject.name" style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;"></h1>
+                        <p x-text="selectedProject.description" style="margin-bottom: 1rem;"></p>
+                        <button @click="toggleDetails(null)" style="background-color: #00a8e8; color: white; cursor: pointer; padding: 0.5rem 1rem; border-radius: 5px; border: none; cursor: pointer; transition: background-color 0.3s ease; position: absolute; right: 2rem; top: 2rem;">
+                            Back to Dashboard
+                        </button>
+                    </div> 
+        
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-blue-50 rounded-lg p-4 shadow-sm">
+                                <h3 class="text-lg font-semibold mb-2 text-blue-700">Timeline</h3>
+                                <p x-text="formatDateRange(selectedProject.startDate, selectedProject.endDate)" class="text-gray-700"></p>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 shadow-sm">
+                                <h3 class="text-lg font-semibold mb-2 text-blue-700">Location</h3>
+                                <p x-text="selectedProject.location" class="text-gray-700"></p>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 shadow-sm md:col-span-2">
+                                <h3 class="text-lg font-semibold mb-2 text-blue-700">Progress</h3>
+                                <div class="flex items-center">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                                        <div class="bg-blue-600 h-2.5 rounded-full" :style="`width: ${selectedProject.progress}%`"></div>
+                                    </div>
+                                    <span x-text="`${selectedProject.progress}%`" class="text-sm font-semibold text-blue-700"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="md:w-[30%] flex-shrink-0">
+                                <h3 class="text-lg font-medium text-gray-700 mb-4">Team Lead</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="flex items-center">
+                                        <img :src="selectedProject.teamLeadImage" :alt="selectedProject.teamLead" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        <div class="ml-3">
+                                            <p class="font-semibold text-gray-800" x-text="selectedProject.teamLead"></p>
+                                            <p class="text-sm text-gray-600">Project Manager</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                            <div class="md:w-[70%] flex-shrink-0">
+                                <h3 class="text-lg font-medium text-gray-700 mb-4">Team Members</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                    <template x-for="member in selectedProject.teamMembers">
+                                        <div class="flex items-center bg-gray-50 p-4 rounded-lg">
+                                            <img :src="`https://picsum.photos/seed/${member}/200`" :alt="member" 
+                                                 class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                            <p class="ml-3 font-medium text-gray-700" x-text="member"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>                        
+                    </div>
+                </div>
+
+                <div x-data="taskManager()" class="mx-auto my-8 space-y-8">
+                    <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+                        <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border-b border-gray-200 flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-white">Task List</h2>
+                            <div class="flex items-center">
+                                <span class="bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-semibold mr-4">
+                                    Tasks: <span x-text="tasks.length"></span>
+                                </span>
+                                <button @click="addNewTask()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-xl text-sm">
+                                    + New Task
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 border-b border-gray-300">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b border-gray-300">
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Task</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Owner</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Due Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Priority</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="(task, index) in tasks" :key="task.id">
+                                        <tr :class="{'bg-blue-50': task.editing}">
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <input x-model="task.description" 
+                                                       class="w-full text-sm font-medium text-gray-900 bg-transparent border rounded-md shadow-sm p-2 transition duration-300 ease-in-out"
+                                                       :class="{
+                                                           'border border-indigo-500 bg-indigo-100': task.editing,
+                                                           'border-transparent': !task.editing
+                                                       }" 
+                                                       :disabled="!task.editing">
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <input x-model="task.name" 
+                                                       class="w-full text-sm font-medium text-gray-900 bg-transparent border rounded-md shadow-sm p-2 transition duration-300 ease-in-out"
+                                                       :class="{
+                                                           'border border-indigo-500 bg-indigo-100': task.editing,
+                                                           'border-transparent': !task.editing
+                                                       }" 
+                                                       :disabled="!task.editing">
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <input type="date" x-model="task.dueDate" 
+                                                       class="w-full text-sm text-gray-900 bg-transparent border rounded-md shadow-sm p-2 transition duration-300 ease-in-out"
+                                                       :class="{
+                                                           'border border-indigo-500 bg-indigo-100': task.editing,
+                                                           'border-transparent': !task.editing
+                                                       }" 
+                                                       :disabled="!task.editing">
+                                            </td>                                            
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <select x-model="task.status" :disabled="!task.editing" class="w-full text-sm font-semibold rounded px-2 py-1" :class="getStatusColor(task.status)">
+                                                    <option value="In Progress">In Progress</option>
+                                                    <option value="Working On">Working On</option>
+                                                    <option value="Done">Done</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <select x-model="task.priority" :disabled="!task.editing" class="w-full text-sm font-semibold rounded px-2 py-1" :class="getPriorityColor(task.priority)">
+                                                    <option value="High">High</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="Low">Low</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium border-r border-gray-300">
+                                                <div class="flex justify-end space-x-2">
+                                                    <button @click="toggleEdit(index)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-blue-100 hover:bg-blue-200 focus:outline-none">
+                                                        <i class="fas" :class="task.editing ? 'fa-save text-blue-600' : 'fa-edit text-blue-600'"></i>
+                                                    </button>
+                                                    <button @click="confirmTaskDelete(task)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-red-100 hover:bg-red-200 focus:outline-none">
+                                                        <i class="fas fa-trash-alt text-red-600"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                
+                     <!-- Task Delete Modal -->
+                    <div x-show="showTaskDeleteModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+                            <h3 class="text-xl font-semibold mb-4">Confirm Task Deletion</h3>
+                            <p>Are you sure you want to delete the task: <span class="font-semibold" x-text="taskToDelete?.description"></span>?</p>
+                            <div class="mt-4 flex justify-end space-x-2">
+                                <button @click="deleteTask()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Delete</button>
+                                <button @click="cancelTaskDelete()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Delete Modal -->
+                    <div x-show="showLocationDeleteModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+                            <h3 class="text-xl font-semibold mb-4">Confirm Location Deletion</h3>
+                            <p>Are you sure you want to delete the location: <span class="font-semibold" x-text="locationToDelete?.name"></span>?</p>
+                            <div class="mt-4 flex justify-end space-x-2">
+                                <button @click="deleteLocation()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Delete</button>
+                                <button @click="cancelLocationDelete()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200 mt-8">
+                        <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border-b border-gray-200 flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-white">Project Locations</h2>
+                            <button @click="addNewLocation()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-xl text-sm">
+                                + Add Location
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 border border-gray-300">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b border-gray-300">
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Location Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Address</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="(location, index) in locations" :key="location.id">
+                                        <tr :class="{'bg-blue-50': location.editing, 'border-b border-gray-300': true}">
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <input x-model="location.name" 
+                                                       class="w-full text-sm font-medium text-gray-900 border rounded-md shadow-sm bg-transparent p-2 transition duration-300 ease-in-out"
+                                                       :class="{
+                                                           'border-indigo-500 bg-indigo-100': location.editing,
+                                                           'border-transparent': !location.editing
+                                                       }" 
+                                                       :disabled="!location.editing">
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
+                                                <input x-model="location.address" 
+                                                       class="w-full text-sm font-medium text-gray-900 border rounded-md shadow-sm bg-transparent p-2 transition duration-300 ease-in-out"
+                                                       :class="{
+                                                           'border-indigo-500 bg-indigo-100': location.editing,
+                                                           'border-transparent': !location.editing
+                                                       }" 
+                                                       :disabled="!location.editing">
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium border-r border-gray-300">
+                                                <template x-if="!location.editing">
+                                                    <div class="flex justify-center space-x-2">
+                                                        <button @click="startEditingLocation(index)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-blue-100 hover:bg-blue-200 focus:outline-none">
+                                                            <i class="fas fa-edit text-blue-600 text-xl"></i>
+                                                        </button>
+                                                        <button @click="confirmLocationDelete(location)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-red-100 hover:bg-red-200 focus:outline-none">
+                                                            <i class="fas fa-trash-alt text-red-600"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                                <template x-if="location.editing">
+                                                    <div class="flex justify-center space-x-2">
+                                                        <button @click="saveLocation(index)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-green-100 hover:bg-green-200 focus:outline-none">
+                                                            <i class="fas fa-save text-green-600 text-xl"></i>
+                                                        </button>
+                                                        <button @click="confirmLocationDelete(location)" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none">
+                                                            <i class="fas fa-times text-gray-600 text-xl"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </td>                                                                                      
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>              
+            </div>
+        </div>
+    </div>
+</body>
+</html>
